@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecipeAI — IBM Granite Powered Recipe Agent</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <!-- Custom styles -->
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" />
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     NAVBAR
+════════════════════════════════════════════════════════════════════════════ -->
+<nav class="navbar navbar-expand-lg navbar-main sticky-top">
+  <div class="container-xl">
+    <!-- Brand -->
+    <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+      <div class="brand-icon">
+        <i class="bi bi-robot"></i>
+      </div>
+      <div>
+        <span class="brand-title">RecipeAI</span>
+        <span class="brand-sub d-none d-sm-inline">Powered by IBM Granite</span>
+      </div>
+    </a>
+
+    <!-- Nav links (desktop) -->
+    <div class="d-none d-lg-flex align-items-center gap-1 ms-auto me-3">
+      <button class="btn btn-nav" onclick="showSection('home')"><i class="bi bi-house me-1"></i>Home</button>
+      <button class="btn btn-nav" onclick="showSection('browse')"><i class="bi bi-grid me-1"></i>Browse</button>
+      <button class="btn btn-nav" onclick="showSection('favorites')"><i class="bi bi-heart me-1"></i>Favorites</button>
+      <button class="btn btn-nav" onclick="showSection('history')"><i class="bi bi-clock-history me-1"></i>History</button>
+    </div>
+
+    <!-- Right controls -->
+    <div class="d-flex align-items-center gap-2">
+      <!-- Health badge -->
+      <span id="health-badge" class="badge-health d-none d-md-inline-flex">
+        <span class="health-dot"></span>
+        <span class="health-label">Checking...</span>
+      </span>
+      <!-- Dark mode toggle -->
+      <button class="btn btn-icon" id="theme-toggle" title="Toggle dark mode">
+        <i class="bi bi-moon-stars" id="theme-icon"></i>
+      </button>
+      <!-- Mobile menu -->
+      <button class="btn btn-icon d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu">
+        <i class="bi bi-list"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile offcanvas menu -->
+<div class="offcanvas offcanvas-end" id="mobileMenu" tabindex="-1">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Menu</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div class="d-flex flex-column gap-2">
+      <button class="btn btn-outline-primary text-start" onclick="showSection('home');closeOffcanvas()"><i class="bi bi-house me-2"></i>Home</button>
+      <button class="btn btn-outline-primary text-start" onclick="showSection('browse');closeOffcanvas()"><i class="bi bi-grid me-2"></i>Browse Recipes</button>
+      <button class="btn btn-outline-primary text-start" onclick="showSection('favorites');closeOffcanvas()"><i class="bi bi-heart me-2"></i>Favorites</button>
+      <button class="btn btn-outline-primary text-start" onclick="showSection('history');closeOffcanvas()"><i class="bi bi-clock-history me-2"></i>History</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════════════════════════════════════ -->
+<main class="container-xl py-4">
+
+  <!-- ── SECTION: HOME ─────────────────────────────────────────────────── -->
+  <section id="section-home" class="app-section active">
+
+    <!-- Hero -->
+    <div class="hero-card mb-4">
+      <div class="hero-bg-pattern"></div>
+      <div class="hero-content">
+        <div class="hero-badge mb-3"><i class="bi bi-stars me-1"></i>AI-Powered by IBM Granite</div>
+        <h1 class="hero-title">What's in your kitchen?</h1>
+        <p class="hero-subtitle">Enter your available ingredients and let IBM Granite craft the perfect recipe using Retrieval-Augmented Generation.</p>
+      </div>
+    </div>
+
+    <!-- Main input card -->
+    <div class="card card-main mb-4">
+      <div class="card-body p-4">
+
+        <!-- Ingredient input -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold"><i class="bi bi-basket2 me-2 text-primary"></i>Your Ingredients</label>
+          <div class="ingredient-input-wrapper">
+            <div id="ingredient-tags" class="ingredient-tags-container"></div>
+            <input type="text" id="ingredient-input" class="ingredient-input"
+              placeholder="Type an ingredient and press Enter or comma..."
+              autocomplete="off" />
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Press <kbd>Enter</kbd> or <kbd>,</kbd> to add · <kbd>Backspace</kbd> to remove last</small>
+            <button class="btn btn-sm btn-outline-secondary" onclick="clearIngredients()"><i class="bi bi-x-circle me-1"></i>Clear all</button>
+          </div>
+          <!-- Quick-add suggestions -->
+          <div class="mt-3">
+            <small class="text-muted me-2">Quick add:</small>
+            <div id="quick-suggestions" class="d-inline-flex flex-wrap gap-1"></div>
+          </div>
+        </div>
+
+        <!-- Filters row -->
+        <div class="row g-3 mb-4">
+          <!-- Cuisine filter -->
+          <div class="col-sm-6 col-lg-3">
+            <label class="form-label fw-semibold"><i class="bi bi-globe2 me-2 text-primary"></i>Cuisine</label>
+            <select id="cuisine-filter" class="form-select">
+              <option value="">All Cuisines</option>
+              <option value="Indian">🇮🇳 Indian</option>
+              <option value="Chinese">🇨🇳 Chinese</option>
+              <option value="Italian">🇮🇹 Italian</option>
+              <option value="Mexican">🇲🇽 Mexican</option>
+            </select>
+          </div>
+          <!-- Dietary filter -->
+          <div class="col-sm-6 col-lg-5">
+            <label class="form-label fw-semibold"><i class="bi bi-heart-pulse me-2 text-primary"></i>Dietary Preferences</label>
+            <div class="d-flex flex-wrap gap-2 pt-1">
+              <div class="form-check form-check-inline diet-check">
+                <input class="form-check-input" type="checkbox" id="diet-veg" value="Vegetarian">
+                <label class="form-check-label" for="diet-veg">🥦 Vegetarian</label>
+              </div>
+              <div class="form-check form-check-inline diet-check">
+                <input class="form-check-input" type="checkbox" id="diet-vegan" value="Vegan">
+                <label class="form-check-label" for="diet-vegan">🌱 Vegan</label>
+              </div>
+              <div class="form-check form-check-inline diet-check">
+                <input class="form-check-input" type="checkbox" id="diet-gf" value="Gluten-Free">
+                <label class="form-check-label" for="diet-gf">🌾 Gluten-Free</label>
+              </div>
+              <div class="form-check form-check-inline diet-check">
+                <input class="form-check-input" type="checkbox" id="diet-hp" value="High Protein">
+                <label class="form-check-label" for="diet-hp">💪 High Protein</label>
+              </div>
+            </div>
+          </div>
+          <!-- Top-K -->
+          <div class="col-sm-6 col-lg-4">
+            <label class="form-label fw-semibold"><i class="bi bi-sliders me-2 text-primary"></i>Results to Retrieve: <span id="topk-val" class="text-primary fw-bold">5</span></label>
+            <input type="range" class="form-range mt-1" id="topk-slider" min="1" max="10" value="5"
+              oninput="document.getElementById('topk-val').textContent=this.value">
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="d-flex gap-3 flex-wrap align-items-center">
+          <button class="btn btn-generate btn-lg" id="btn-generate" onclick="generateRecipe()">
+            <i class="bi bi-magic me-2"></i>Generate Recipe
+          </button>
+          <button class="btn btn-outline-secondary btn-lg" onclick="showSection('browse')">
+            <i class="bi bi-grid me-2"></i>Browse All Recipes
+          </button>
+          <button class="btn btn-outline-info btn-lg" onclick="openLeftoverModal()">
+            <i class="bi bi-recycle me-2"></i>Use Leftovers
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading-state" class="loading-container d-none">
+      <div class="loading-card">
+        <div class="loading-chef">
+          <div class="chef-hat"><i class="bi bi-robot"></i></div>
+          <div class="loading-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="loading-steps" id="loading-steps">
+          <div class="loading-step active" id="step-embed"><i class="bi bi-cpu me-2"></i>Generating embeddings...</div>
+          <div class="loading-step" id="step-retrieve"><i class="bi bi-search me-2"></i>Retrieving top recipes from ChromaDB...</div>
+          <div class="loading-step" id="step-granite"><i class="bi bi-robot me-2"></i>IBM Granite is crafting your recipe...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result area -->
+    <div id="result-area" class="d-none">
+
+      <!-- AI Response card -->
+      <div class="card card-result mb-4">
+        <div class="card-header-result">
+          <div class="d-flex align-items-center gap-2">
+            <div class="result-icon"><i class="bi bi-stars"></i></div>
+            <div>
+              <h5 class="mb-0">AI Recipe Recommendation</h5>
+              <small class="text-muted">Generated by IBM Granite via RAG</small>
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-secondary" onclick="copyResponse()" title="Copy">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-4">
+          <div id="ai-response" class="ai-response-text"></div>
+        </div>
+      </div>
+
+      <!-- Retrieved recipes row -->
+      <div class="mb-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-collection me-2 text-primary"></i>Top Retrieved Recipes</h5>
+        <small class="text-muted" id="retrieved-count"></small>
+      </div>
+      <div id="retrieved-cards" class="row g-3 mb-4"></div>
+
+    </div>
+
+    <!-- Feature cards row -->
+    <div id="feature-row" class="row g-3 mb-2">
+      <div class="col-md-4">
+        <div class="feature-card" onclick="showSection('browse')">
+          <div class="feature-icon text-primary"><i class="bi bi-grid-3x3-gap"></i></div>
+          <h6>Browse Recipes</h6>
+          <p class="text-muted small mb-0">Explore 30+ curated recipes across 4 cuisines</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card" onclick="openLeftoverModal()">
+          <div class="feature-icon text-success"><i class="bi bi-recycle"></i></div>
+          <h6>Use Leftovers</h6>
+          <p class="text-muted small mb-0">Turn leftover ingredients into creative meals</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="feature-card" onclick="showSection('favorites')">
+          <div class="feature-icon text-danger"><i class="bi bi-heart"></i></div>
+          <h6>Saved Favorites</h6>
+          <p class="text-muted small mb-0">Revisit recipes you have loved</p>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ── SECTION: BROWSE ────────────────────────────────────────────────── -->
+  <section id="section-browse" class="app-section">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+      <div>
+        <h3 class="mb-1"><i class="bi bi-grid me-2 text-primary"></i>Browse Recipes</h3>
+        <p class="text-muted mb-0">Explore our curated collection. Click any card for the full recipe.</p>
+      </div>
+      <button class="btn btn-outline-secondary" onclick="showSection('home')"><i class="bi bi-arrow-left me-1"></i>Back</button>
+    </div>
+
+    <!-- Browse filters -->
+    <div class="card mb-4 p-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-sm-4 col-lg-3">
+          <label class="form-label small fw-semibold">Cuisine</label>
+          <select id="browse-cuisine" class="form-select form-select-sm" onchange="loadBrowse()">
+            <option value="">All Cuisines</option>
+            <option value="Indian">🇮🇳 Indian</option>
+            <option value="Chinese">🇨🇳 Chinese</option>
+            <option value="Italian">🇮🇹 Italian</option>
+            <option value="Mexican">🇲🇽 Mexican</option>
+          </select>
+        </div>
+        <div class="col-sm-4 col-lg-3">
+          <label class="form-label small fw-semibold">Dietary</label>
+          <select id="browse-dietary" class="form-select form-select-sm" onchange="loadBrowse()">
+            <option value="">All Diets</option>
+            <option value="Vegetarian">Vegetarian</option>
+            <option value="Vegan">Vegan</option>
+            <option value="Gluten-Free">Gluten-Free</option>
+            <option value="High Protein">High Protein</option>
+          </select>
+        </div>
+        <div class="col-sm-4 col-lg-3">
+          <label class="form-label small fw-semibold">Difficulty</label>
+          <select id="browse-difficulty" class="form-select form-select-sm" onchange="filterBrowseLocal()">
+            <option value="">All Levels</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
+        <div class="col-lg-3">
+          <label class="form-label small fw-semibold">Search</label>
+          <input type="text" id="browse-search" class="form-control form-control-sm"
+            placeholder="Search by name..." oninput="filterBrowseLocal()" />
+        </div>
+      </div>
+    </div>
+
+    <div id="browse-count" class="text-muted small mb-3"></div>
+    <div id="browse-cards" class="row g-3"></div>
+    <div id="browse-empty" class="d-none text-center py-5">
+      <i class="bi bi-search display-4 text-muted"></i>
+      <p class="mt-3 text-muted">No recipes match your filters.</p>
+    </div>
+  </section>
+
+  <!-- ── SECTION: FAVORITES ─────────────────────────────────────────────── -->
+  <section id="section-favorites" class="app-section">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+      <div>
+        <h3 class="mb-1"><i class="bi bi-heart me-2 text-danger"></i>Favorite Recipes</h3>
+        <p class="text-muted mb-0">Your saved recipes are stored for this session.</p>
+      </div>
+      <button class="btn btn-outline-secondary" onclick="showSection('home')"><i class="bi bi-arrow-left me-1"></i>Back</button>
+    </div>
+    <div id="favorites-list" class="row g-3"></div>
+    <div id="favorites-empty" class="d-none text-center py-5">
+      <i class="bi bi-heart display-4 text-muted"></i>
+      <p class="mt-3 text-muted">No favorites yet. Click <i class="bi bi-heart"></i> on any recipe card to save it.</p>
+      <button class="btn btn-outline-primary" onclick="showSection('browse')">Browse Recipes</button>
+    </div>
+  </section>
+
+  <!-- ── SECTION: HISTORY ───────────────────────────────────────────────── -->
+  <section id="section-history" class="app-section">
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+      <div>
+        <h3 class="mb-1"><i class="bi bi-clock-history me-2 text-warning"></i>Query History</h3>
+        <p class="text-muted mb-0">Your recent ingredient searches (this session).</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-danger btn-sm" onclick="clearHistory()"><i class="bi bi-trash me-1"></i>Clear</button>
+        <button class="btn btn-outline-secondary" onclick="showSection('home')"><i class="bi bi-arrow-left me-1"></i>Back</button>
+      </div>
+    </div>
+    <div id="history-list"></div>
+    <div id="history-empty" class="d-none text-center py-5">
+      <i class="bi bi-clock-history display-4 text-muted"></i>
+      <p class="mt-3 text-muted">No history yet. Generate your first recipe above.</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MODALS
+════════════════════════════════════════════════════════════════════════════ -->
+
+<!-- Recipe Detail Modal -->
+<div class="modal fade" id="recipeModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <div class="flex-grow-1">
+          <div id="modal-badges" class="d-flex flex-wrap gap-2 mb-2"></div>
+          <h4 class="modal-title fw-bold" id="modal-title">Recipe Name</h4>
+          <div id="modal-meta" class="d-flex flex-wrap gap-3 text-muted small mt-1"></div>
+        </div>
+        <div class="d-flex gap-2 ms-3">
+          <button class="btn btn-sm btn-outline-danger" id="modal-fav-btn" onclick="toggleFavoriteModal()">
+            <i class="bi bi-heart" id="modal-fav-icon"></i>
+          </button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+      </div>
+      <div class="modal-body pt-3">
+        <div class="row g-4">
+
+          <!-- Left column -->
+          <div class="col-lg-5">
+            <!-- Recipe image placeholder -->
+            <div class="recipe-image-placeholder mb-3" id="modal-img-placeholder">
+              <i class="bi bi-egg-fried display-1 text-muted"></i>
+              <div class="placeholder-label" id="modal-cuisine-label"></div>
+            </div>
+
+            <!-- Nutrition -->
+            <div class="card mb-3">
+              <div class="card-body p-3">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-pie-chart me-2 text-primary"></i>Nutrition (per serving)</h6>
+                <div id="modal-nutrition" class="nutrition-grid"></div>
+              </div>
+            </div>
+
+            <!-- Difficulty & Time -->
+            <div class="card mb-3">
+              <div class="card-body p-3">
+                <div class="row g-2 text-center">
+                  <div class="col-4">
+                    <div class="stat-box"><div class="stat-value" id="modal-time"></div><div class="stat-label">Minutes</div></div>
+                  </div>
+                  <div class="col-4">
+                    <div class="stat-box"><div class="stat-value" id="modal-difficulty"></div><div class="stat-label">Difficulty</div></div>
+                  </div>
+                  <div class="col-4">
+                    <div class="stat-box"><div class="stat-value" id="modal-servings"></div><div class="stat-label">Servings</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Substitutions -->
+            <div class="card mb-3">
+              <div class="card-body p-3">
+                <h6 class="fw-semibold mb-2"><i class="bi bi-arrow-left-right me-2 text-warning"></i>Substitutions</h6>
+                <div id="modal-substitutions"></div>
+              </div>
+            </div>
+
+            <!-- Waste tips -->
+            <div class="card">
+              <div class="card-body p-3">
+                <h6 class="fw-semibold mb-2"><i class="bi bi-recycle me-2 text-success"></i>Waste Reduction Tips</h6>
+                <ul id="modal-waste-tips" class="list-unstyled mb-0"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div class="col-lg-7">
+
+            <!-- Ingredients -->
+            <div class="card mb-3">
+              <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="fw-semibold mb-0"><i class="bi bi-basket2 me-2 text-primary"></i>Ingredients</h6>
+                  <button class="btn btn-sm btn-outline-primary" onclick="openShoppingList()">
+                    <i class="bi bi-cart me-1"></i>Shopping List
+                  </button>
+                </div>
+                <ul id="modal-ingredients" class="ingredient-list"></ul>
+              </div>
+            </div>
+
+            <!-- Steps -->
+            <div class="card mb-3">
+              <div class="card-body p-3">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-list-ol me-2 text-primary"></i>Step-by-Step Instructions</h6>
+                <ol id="modal-steps" class="steps-list"></ol>
+              </div>
+            </div>
+
+            <!-- AI Substitution tool -->
+            <div class="card">
+              <div class="card-body p-3">
+                <h6 class="fw-semibold mb-2"><i class="bi bi-robot me-2 text-primary"></i>AI Substitution Finder</h6>
+                <div class="input-group">
+                  <input type="text" id="sub-ingredient-input" class="form-control"
+                    placeholder='e.g. "heavy cream" — ingredient to replace'>
+                  <button class="btn btn-primary" onclick="getSubstitutions()">
+                    <i class="bi bi-magic me-1"></i>Find Subs
+                  </button>
+                </div>
+                <div id="sub-result" class="mt-3 d-none">
+                  <div class="alert alert-info mb-0 small" id="sub-result-text"></div>
+                </div>
+                <div id="sub-loading" class="text-center py-2 d-none">
+                  <div class="spinner-border spinner-border-sm text-primary"></div>
+                  <small class="ms-2">IBM Granite is thinking...</small>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        <button class="btn btn-primary" onclick="useRecipeIngredients()">
+          <i class="bi bi-arrow-up-left me-1"></i>Use These Ingredients
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leftover Modal -->
+<div class="modal fade" id="leftoverModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-recycle me-2 text-success"></i>Leftover Ingredient Ideas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">Enter ingredients you have left over and IBM Granite will suggest creative ways to use them up.</p>
+        <div class="mb-3">
+          <div class="ingredient-input-wrapper">
+            <div id="leftover-tags" class="ingredient-tags-container"></div>
+            <input type="text" id="leftover-input" class="ingredient-input"
+              placeholder="Type leftover ingredient and press Enter..." />
+          </div>
+        </div>
+        <div class="mb-3">
+          <select id="leftover-cuisine" class="form-select">
+            <option value="">Any Cuisine</option>
+            <option value="Indian">🇮🇳 Indian</option>
+            <option value="Chinese">🇨🇳 Chinese</option>
+            <option value="Italian">🇮🇹 Italian</option>
+            <option value="Mexican">🇲🇽 Mexican</option>
+          </select>
+        </div>
+        <button class="btn btn-success w-100 mb-3" onclick="submitLeftover()">
+          <i class="bi bi-magic me-2"></i>Generate Leftover Ideas
+        </button>
+        <div id="leftover-loading" class="text-center py-3 d-none">
+          <div class="spinner-border text-success"></div>
+          <p class="mt-2 text-muted small">IBM Granite is finding creative uses for your leftovers...</p>
+        </div>
+        <div id="leftover-result" class="d-none">
+          <div class="alert alert-success mb-3">
+            <h6 class="alert-heading"><i class="bi bi-lightbulb me-2"></i>Creative Recipe Ideas</h6>
+            <div id="leftover-result-text" class="small"></div>
+          </div>
+          <div id="leftover-similar-cards" class="row g-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Shopping List Modal -->
+<div class="modal fade" id="shoppingModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-cart3 me-2 text-primary"></i>Shopping List</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">Tell us what you already have and we will generate a shopping list for the missing items.</p>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Ingredients you already have:</label>
+          <div class="ingredient-input-wrapper">
+            <div id="shopping-have-tags" class="ingredient-tags-container"></div>
+            <input type="text" id="shopping-have-input" class="ingredient-input"
+              placeholder="Type ingredient you have and press Enter..." />
+          </div>
+        </div>
+        <button class="btn btn-primary w-100 mb-3" onclick="submitShoppingList()">
+          <i class="bi bi-cart me-2"></i>Generate Shopping List
+        </button>
+        <div id="shopping-loading" class="text-center py-3 d-none">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-2 text-muted small">Calculating missing ingredients...</p>
+        </div>
+        <div id="shopping-result" class="d-none">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-semibold mb-0">Missing Ingredients</h6>
+                <button class="btn btn-sm btn-outline-secondary" onclick="copyShoppingList()">
+                  <i class="bi bi-clipboard me-1"></i>Copy
+                </button>
+              </div>
+              <div id="shopping-missing-badges" class="d-flex flex-wrap gap-2 mb-3"></div>
+              <div id="shopping-result-text" class="small text-pre-wrap"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SCRIPTS
+════════════════════════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+</body>
+</html>

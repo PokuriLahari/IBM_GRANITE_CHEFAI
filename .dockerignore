@@ -1,0 +1,44 @@
+# ── Secrets — must never enter the image ─────────────────────────────────────
+.env
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Local ChromaDB data ───────────────────────────────────────────────────────
+# Rebuilt automatically on first container start (Option B strategy)
+chroma_db/
+
+# ── Dev / test files ──────────────────────────────────────────────────────────
+_validate_*.py
+_find_*.py
+_probe_*.py
+_test_*.py
+
+# ── VCS ───────────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Docs / deployment helpers (not needed inside image) ──────────────────────
+deployment.md
+README.md
+
+# ── Sentence-transformer cache (rebuilt during docker build) ─────────────────
+.sentence_transformers/

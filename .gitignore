@@ -1,0 +1,131 @@
+﻿# =============================================================================
+# IBM Granite ChefAI — .gitignore
+# Nothing sensitive, generated, or local should ever be committed.
+# =============================================================================
+
+# -- Secrets & credentials -----------------------------------------------------
+# IMPORTANT: .env contains IBM API keys -- must NEVER be committed
+.env
+.env.*
+!.env.example
+
+# -- Python cache & compiled files ---------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyw
+.Python
+
+# -- Virtual environments ------------------------------------------------------
+venv/
+.venv/
+env/
+ENV/
+testenv/
+.virtualenv/
+pythonenv*/
+
+# -- ChromaDB vector store (rebuilt automatically on first run) ----------------
+chroma_db/
+*.sqlite3
+
+# -- HuggingFace / SentenceTransformers model cache ----------------------------
+.sentence_transformers/
+.cache/
+huggingface/
+
+# -- IDE & editor files --------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.settings/
+*.iml
+*.ipr
+*.iws
+
+# -- Operating system files ----------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# -- Logs ----------------------------------------------------------------------
+*.log
+logs/
+*.log.*
+
+# -- Temporary & backup files --------------------------------------------------
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*.rej
+*~
+
+# -- Test & verification artifacts ---------------------------------------------
+.pytest_cache/
+.mypy_cache/
+.tox/
+.coverage
+coverage/
+coverage.xml
+htmlcov/
+nosetests.xml
+*.cover
+.hypothesis/
+
+# -- Temporary verification directories ----------------------------------------
+.verify_chroma_tmp/
+.verify_*/
+
+# -- Build & distribution ------------------------------------------------------
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+MANIFEST
+
+# -- Archives ------------------------------------------------------------------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.tar.bz2
+*.7z
+*.rar
+
+# -- Node / frontend -----------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# -- Jupyter Notebooks ---------------------------------------------------------
+.ipynb_checkpoints/
+*.ipynb
+
+# -- Credentials & API keys (belt-and-suspenders) ------------------------------
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service_account.json
+*_credentials.json
+*_secrets.json
+secret_*.json
